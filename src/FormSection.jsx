@@ -1,0 +1,73 @@
+import React, {useState} from "react";
+
+const FormSession = ({setPlants, setMessage}) => {
+     const [formData, setFormData] = useState ({
+        edible: '',
+        pets_kids: '',
+        lifespan: '',
+        water_schedule: '',
+        sunlight: ''
+
+     })
+
+     const handleChange = (e) => {
+        const {name, value} = e.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        })
+     }
+
+     // Function to shuffle an array
+     const shuffleArray = (array) => {
+     for (let i = array.length - 1; i > 0; i--) {
+         const j = Math.floor(Math.random() * (i + 1)); // random index from 0 to i
+         [array[i], array[j]] = [array[j], array[i]]; // swap elements
+      }
+     }
+
+     const handleSubmit = async (e) => {
+        e.preventDefault()
+        const params = new URLSearchParams()
+        const apiUrl = `https://perenual.com/api/species-list?key=${import.meta.env.VITE_PERENUAL_API_KEY}&indoor=1&${params}`;
+
+        
+        try {
+        const response = await fetch(apiUrl)
+        const data = await response.json()
+        const validData = data.data.filter(item => 
+            !(item.cycle.includes("Upgrade") ||
+            item.watering.includes("Upgrade") ||
+            item.sunlight.includes("Upgrade"))
+        )
+
+        if (validData && validData.length > 0) {
+            shuffleArray(validData)
+            setPlants(validData.slice(0,3))
+            setMessage(null)
+        } else {
+            setPlants([])
+            setMessage("No results returned, please modify your selection and try again.")
+        }
+
+        } catch (error) {
+            console.error('Error', error)
+            setPlants([])
+            setMessage("Internal Server error")
+        }
+     }
+
+     return (
+        <div class="form-section">
+        <h1>Plant Monitor</h1>
+        <h2>Murder Fewer Houseplants...maybe</h2>
+        <form id="plant-form" onSubmit={handleSubmit}>
+        {['edible', 'pets_kids', 'lifespan', 'water_schedule', 'sunlight'].map
+        ((field, index) => (
+            <div className="question" key={index}>
+                <label htmlFor={field}>{field === 'pets_kids' ? 'PETS OR KIDS' : field.replace('_', '').toUpperCase()}</label>
+            </div>
+        ))}
+        </form>
+     )
+}
